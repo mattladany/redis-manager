@@ -10,9 +10,10 @@ import (
 )
 
 type model struct {
-	choices  []string
-	cursor   int
-	selected map[int]struct{}
+	keys      []string
+	keyValues map[string]string
+	cursor    int
+	selected  map[int]struct{}
 }
 
 func initialModel() model {
@@ -25,14 +26,26 @@ func initialModel() model {
 		DB:       0,
 	})
 
-	keys, err := rdb.Do(ctx, "KEYS", "*").StringSlice()
-	if err != nil {
+	keyValues := make(map[string]string)
+	keys := make([]string, 0)
+	iter := rdb.Scan(ctx, 0, "*", 0).Iterator()
+	for iter.Next(ctx) {
+		key := iter.Val()
+		value, err := rdb.Get(ctx, key).Result()
+		if err != nil {
+			panic(err)
+		}
+		keys = append(keys, key)
+		keyValues[key] = value
+	}
+	if err := iter.Err(); err != nil {
 		panic(err)
 	}
 
 	return model{
-		choices:  keys,
-		selected: make(map[int]struct{}),
+		keys:      keys,
+		keyValues: keyValues,
+		selected:  make(map[int]struct{}),
 	}
 }
 
@@ -61,7 +74,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		// The "down" and "j" keys move the cursor down
 		case "down", "j":
-			if m.cursor < len(m.choices)-1 {
+			if m.cursor < len(m.keyValues)-1 {
 				m.cursor++
 			}
 
@@ -87,7 +100,7 @@ func (m model) View() string {
 	s := "What should we buy at the market?\n\n"
 
 	// Iterate over our choices
-	for i, choice := range m.choices {
+	for i, choice := range m.keys {
 
 		// Is the cursor pointing at this choice?
 		cursor := " " // no cursor
@@ -95,14 +108,8 @@ func (m model) View() string {
 			cursor = ">" // cursor!
 		}
 
-		// Is this choice selected?
-		checked := " " // not selected
-		if _, ok := m.selected[i]; ok {
-			checked = "x" // selected!
-		}
-
 		// Render the row
-		s += fmt.Sprintf("%s [%s] %s\n", cursor, checked, choice)
+		s += fmt.Sprintf("%s %s\n", cursor, choice)
 	}
 
 	// The footer

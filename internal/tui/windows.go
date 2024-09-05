@@ -46,7 +46,7 @@ func bottomWindow(content string, width int) string {
 	return windowStyle.Width(width).Render(content)
 }
 
-func Render(m Model) string {
+func render(m Model) string {
 	// Calculate the width for each panel (assuming a total width of 100)
 	totalWidth := 100
 	leftWidth := totalWidth / 2
@@ -56,8 +56,8 @@ func Render(m Model) string {
 	topWindow := headerWindow(totalWidth)
 
 	// Create middle windows
-	leftWindow := leftWindow(m.Keys, m.Cursor, leftWidth)
-	rightWindow := rightWindow(m.Keys[m.Cursor], m.KeyValues[m.Keys[m.Cursor]], rightWidth)
+	leftWindow := leftWindow(m.SortedKeys, m.Cursor, leftWidth)
+	rightWindow := rightWindow(m.SortedKeys[m.Cursor], m.KeyValues[m.SortedKeys[m.Cursor]], rightWidth)
 	middleContent := lipgloss.JoinHorizontal(lipgloss.Top, leftWindow, rightWindow)
 
 	// Create bottom window

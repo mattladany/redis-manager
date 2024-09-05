@@ -1,14 +1,16 @@
 package tui
 
 import (
+	"fmt"
+
 	tea "github.com/charmbracelet/bubbletea"
 )
 
 type Model struct {
-	Keys      []string
-	KeyValues map[string]string
-	Cursor    int
-	Selected  map[int]struct{}
+	SortedKeys []string
+	KeyValues  map[string]string
+	Cursor     int
+	Selected   map[int]struct{}
 }
 
 func (m Model) Init() tea.Cmd {
@@ -26,6 +28,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		// These keys should exit the program.
 		case "ctrl+c", "q":
+			// Clear the screen
+			fmt.Print("\033[2J")
+			fmt.Print("\033[H")
 			return m, tea.Quit
 
 		// The "up" and "k" keys move the cursor up
@@ -48,5 +53,5 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m Model) View() string {
-	return Render(m)
+	return render(m)
 }

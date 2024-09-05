@@ -1,48 +1,28 @@
 package main
 
 import (
-	"context"
 	"fmt"
 	"os"
 	"sort"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/mattladany/redis-manager/internal/redis"
 	"github.com/mattladany/redis-manager/internal/tui"
-	"github.com/redis/go-redis/v9"
 )
 
 func initialModel() tui.Model {
 
-	ctx := context.Background()
-
-	rdb := redis.NewClient(&redis.Options{
-		Addr:     "localhost:30000",
-		Password: "",
-		DB:       0,
-	})
-
-	keyValues := make(map[string]string)
-	keys := make([]string, 0)
-	iter := rdb.Scan(ctx, 0, "*", 0).Iterator()
-	for iter.Next(ctx) {
-		key := iter.Val()
-		value, err := rdb.Get(ctx, key).Result()
-		if err != nil {
-			panic(err)
-		}
+	data := redis.GetAllData()
+	keys := make([]string, 0, len(data))
+	for key := range data {
 		keys = append(keys, key)
-		keyValues[key] = value
 	}
-	if err := iter.Err(); err != nil {
-		panic(err)
-	}
-
 	sort.Strings(keys)
 
 	return tui.Model{
-		Keys:      keys,
-		KeyValues: keyValues,
-		Selected:  make(map[int]struct{}),
+		SortedKeys: keys,
+		KeyValues:  data,
+		Selected:   make(map[int]struct{}),
 	}
 }
 

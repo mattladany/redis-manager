@@ -4,8 +4,10 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"sort"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 	"github.com/redis/go-redis/v9"
 )
 
@@ -15,6 +17,16 @@ type model struct {
 	cursor    int
 	selected  map[int]struct{}
 }
+
+var (
+	windowStyle = lipgloss.NewStyle().
+			BorderStyle(lipgloss.NormalBorder()).
+			BorderForeground(lipgloss.Color("240"))
+
+	titleStyle = lipgloss.NewStyle().
+			Foreground(lipgloss.Color("33")).
+			Bold(true)
+)
 
 func initialModel() model {
 
@@ -41,6 +53,8 @@ func initialModel() model {
 	if err := iter.Err(); err != nil {
 		panic(err)
 	}
+
+	sort.Strings(keys)
 
 	return model{
 		keys:      keys,
@@ -96,27 +110,47 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m model) View() string {
-	// The header
-	s := "What should we buy at the market?\n\n"
+	// Calculate the width for each panel (assuming a total width of 100)
+	totalWidth := 100
+	leftWidth := totalWidth / 2
+	rightWidth := totalWidth - leftWidth
 
-	// Iterate over our choices
-	for i, choice := range m.keys {
-
-		// Is the cursor pointing at this choice?
-		cursor := " " // no cursor
+	// Left panel content
+	leftContent := titleStyle.Render("Redis Keys") + "\n\n"
+	for i, key := range m.keys {
+		cursor := " "
 		if m.cursor == i {
-			cursor = ">" // cursor!
+			cursor = ">"
 		}
-
-		// Render the row
-		s += fmt.Sprintf("%s %s\n", cursor, choice)
+		leftContent += fmt.Sprintf("%s %s\n", cursor, key)
 	}
 
-	// The footer
-	s += "\nPress q to quit.\n"
+	// Right panel content
+	rightContent := titleStyle.Render("Selected Key Value") + "\n\n"
+	if m.cursor < len(m.keys) {
+		selectedKey := m.keys[m.cursor]
+		rightContent += fmt.Sprintf("Key: %s\nValue: %s", selectedKey, m.keyValues[selectedKey])
+	}
 
-	// Send the UI for rendering
-	return s
+	// Create windows
+	leftWindow := windowStyle.Width(leftWidth).Render(leftContent)
+	rightWindow := windowStyle.Width(rightWidth).Render(rightContent)
+
+	// Create top window
+	topWindow := windowStyle.Width(totalWidth).Render(titleStyle.Render("Redis Manager"))
+
+	// Create bottom window
+	bottomWindow := windowStyle.Width(totalWidth).Render("Press 'q' to quit")
+
+	// Combine windows
+	middleContent := lipgloss.JoinHorizontal(lipgloss.Top, leftWindow, rightWindow)
+	return lipgloss.JoinVertical(
+		lipgloss.Left,
+		topWindow,
+		middleContent,
+		bottomWindow,
+	)
+
 }
 
 func main() {

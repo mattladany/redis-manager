@@ -18,6 +18,7 @@ var (
 
 const (
 	HeaderWindowTitle = "Redis Manager"
+	FooterWindowTitle = "'q' quit, '^r' refresh"
 )
 
 func headerWindow(width int) string {
@@ -42,8 +43,8 @@ func rightWindow(key string, value string, width int) string {
 	return windowStyle.Width(width).Render(content)
 }
 
-func bottomWindow(content string, width int) string {
-	return windowStyle.Width(width).Render(content)
+func bottomWindow(width int) string {
+	return windowStyle.Width(width).Render(FooterWindowTitle)
 }
 
 func render(m Model) string {
@@ -76,7 +77,7 @@ func renderActive(m Model) string {
 	middleContent := lipgloss.JoinHorizontal(lipgloss.Top, leftWindow, rightWindow)
 
 	// Create bottom window
-	bottomWindow := bottomWindow("Press 'q' to quit", totalWidth)
+	bottomWindow := bottomWindow(totalWidth)
 
 	return lipgloss.JoinVertical(
 		lipgloss.Left,

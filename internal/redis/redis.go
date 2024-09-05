@@ -6,7 +6,7 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
-func GetAllData() map[string]string {
+func GetAllData() (map[string]string, error) {
 	ctx := context.Background()
 
 	rdb := redis.NewClient(&redis.Options{
@@ -21,13 +21,13 @@ func GetAllData() map[string]string {
 		key := iter.Val()
 		value, err := rdb.Get(ctx, key).Result()
 		if err != nil {
-			panic(err)
+			return nil, err
 		}
 		keyValues[key] = value
 	}
 	if err := iter.Err(); err != nil {
-		panic(err)
+		return nil, err
 	}
 
-	return keyValues
+	return keyValues, nil
 }

@@ -47,6 +47,21 @@ func bottomWindow(content string, width int) string {
 }
 
 func render(m Model) string {
+	switch m.State {
+	case Fetching:
+		return renderFetching()
+	case Active:
+		return renderActive(m)
+	default:
+		return "Unknown state"
+	}
+}
+
+func renderFetching() string {
+	return "Fetching data..."
+}
+
+func renderActive(m Model) string {
 	// Calculate the width for each panel (assuming a total width of 100)
 	totalWidth := 100
 	leftWidth := totalWidth / 2

@@ -3,25 +3,15 @@ package main
 import (
 	"fmt"
 	"os"
-	"sort"
 
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/mattladany/redis-manager/internal/redis"
 	"github.com/mattladany/redis-manager/internal/tui"
 )
 
 func initialModel() tui.Model {
-
-	data := redis.GetAllData()
-	keys := make([]string, 0, len(data))
-	for key := range data {
-		keys = append(keys, key)
-	}
-	sort.Strings(keys)
-
 	return tui.Model{
-		SortedKeys: keys,
-		KeyValues:  data,
+		SortedKeys: make([]string, 0),
+		KeyValues:  make(map[string]string),
 		Selected:   make(map[int]struct{}),
 	}
 }

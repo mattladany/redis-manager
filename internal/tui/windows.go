@@ -21,11 +21,11 @@ const (
 	FooterWindowTitle = "'q' quit, '^r' refresh"
 )
 
-func headerWindow(width int) string {
+func formatHeaderWindow(width int) string {
 	return windowStyle.Width(width).Render(titleStyle.Render(HeaderWindowTitle))
 }
 
-func leftWindow(keys []string, cursorIndex int, width int) string {
+func formatLeftWindow(keys []string, cursorIndex int, width int) string {
 	content := titleStyle.Render("Redis Keys") + "\n\n"
 	for i, key := range keys {
 		cursor := " "
@@ -37,13 +37,13 @@ func leftWindow(keys []string, cursorIndex int, width int) string {
 	return windowStyle.Width(width).Render(content)
 }
 
-func rightWindow(key string, value string, width int) string {
+func formatRightWindow(key string, value string, width int) string {
 	content := titleStyle.Render("Selected Key Value") + "\n\n"
 	content += fmt.Sprintf("Key: %s\nValue: %s", key, value)
 	return windowStyle.Width(width).Render(content)
 }
 
-func bottomWindow(width int) string {
+func formatBottomWindow(width int) string {
 	return windowStyle.Width(width).Render(FooterWindowTitle)
 }
 
@@ -63,21 +63,26 @@ func renderFetching() string {
 }
 
 func renderActive(m Model) string {
+
 	// Calculate the width for each panel (assuming a total width of 100)
 	totalWidth := 100
 	leftWidth := totalWidth / 2
 	rightWidth := totalWidth - leftWidth
 
 	// Create top window
-	topWindow := headerWindow(totalWidth)
+	topWindow := formatHeaderWindow(totalWidth)
 
 	// Create middle windows
-	leftWindow := leftWindow(m.SortedKeys, m.Cursor, leftWidth)
-	rightWindow := rightWindow(m.SortedKeys[m.Cursor], m.KeyValues[m.SortedKeys[m.Cursor]], rightWidth)
+	leftWindow := "No data found"
+	rightWindow := "No data found"
+	if len(m.SortedKeys) > 0 {
+		leftWindow = formatLeftWindow(m.SortedKeys, m.Cursor, leftWidth)
+		rightWindow = formatRightWindow(m.SortedKeys[m.Cursor], m.KeyValues[m.SortedKeys[m.Cursor]], rightWidth)
+	}
 	middleContent := lipgloss.JoinHorizontal(lipgloss.Top, leftWindow, rightWindow)
 
 	// Create bottom window
-	bottomWindow := bottomWindow(totalWidth)
+	bottomWindow := formatBottomWindow(totalWidth)
 
 	return lipgloss.JoinVertical(
 		lipgloss.Left,

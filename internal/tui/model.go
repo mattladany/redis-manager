@@ -4,7 +4,9 @@ import (
 	"fmt"
 	"sort"
 
+	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 )
 
 type State int
@@ -16,12 +18,17 @@ const (
 )
 
 type Model struct {
-	SortedKeys []string
-	KeyValues  map[string]string
-	Cursor     int
-	Selected   map[int]struct{}
-	State      State
+	List  list.Model
+	State State
 }
+
+type item struct {
+	key, value string
+}
+
+func (i item) Title() string       { return i.key }
+func (i item) Description() string { return i.value }
+func (i item) FilterValue() string { return i.key }
 
 func (m Model) Init() tea.Cmd {
 	return func() tea.Msg {
@@ -30,58 +37,51 @@ func (m Model) Init() tea.Cmd {
 }
 
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	docStyle := lipgloss.NewStyle().Margin(1, 2)
+
 	switch msg := msg.(type) {
 
-	// Is it a key press?
-	case tea.KeyMsg:
+	case tea.WindowSizeMsg:
+		h, v := docStyle.GetFrameSize()
+		m.List.SetSize(msg.Width-h, msg.Height-v)
 
-		// Cool, what was the actual key pressed?
+	// Key press
+	case tea.KeyMsg:
 		switch msg.String() {
 
-		// These keys should exit the program.
+		// Exit
 		case "ctrl+c", "q":
 			// Clear the screen
 			fmt.Print("\033[2J")
 			fmt.Print("\033[H")
 			return m, tea.Quit
 
-		// NAVIGATION
-
-		// The "up" and "k" keys move the cursor up
-		case "up", "k":
-			if m.Cursor > 0 {
-				m.Cursor--
-			}
-
-		// The "down" and "j" keys move the cursor down
-		case "down", "j":
-			if m.Cursor < len(m.KeyValues)-1 {
-				m.Cursor++
-			}
-
 		// HOT KEYS
 
-		// Refresh the data
+		// Refresh Redis data
 		case "ctrl+r":
 			m.State = Fetching
-			return m, RefreshData()
+			return m, FetchAll()
 		}
 
-	// Update the data and reset the cursor to 0
-	case RefreshDataCmd:
+	// Update Redis data
+	case FetchResponse:
 		m.State = Active
-		m.KeyValues = msg.Data
-		m.SortedKeys = make([]string, 0, len(m.KeyValues))
-		for key := range m.KeyValues {
-			m.SortedKeys = append(m.SortedKeys, key)
+		items := make([]list.Item, 0)
+		for key, value := range msg.Data {
+			items = append(items, item{key: key, value: value})
 		}
-		sort.Strings(m.SortedKeys)
-		m.Cursor = 0
+
+		sort.Slice(items, func(i, j int) bool {
+			return items[i].FilterValue() < items[j].FilterValue()
+		})
+
+		m.List.SetItems(items)
 	}
 
-	// Return the updated model to the Bubble Tea runtime for processing.
-	// Note that we're not returning a command.
-	return m, nil
+	var cmd tea.Cmd
+	m.List, cmd = m.List.Update(msg)
+	return m, cmd
 }
 
 func (m Model) View() string {

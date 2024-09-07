@@ -5,15 +5,15 @@ import (
 	"github.com/mattladany/redis-manager/internal/redis"
 )
 
-type RefreshDataCmd struct {
+type FetchResponse struct {
 	Data map[string]string
 	Err  error
 }
 
-func RefreshData() tea.Cmd {
+func FetchAll() tea.Cmd {
 	return func() tea.Msg {
 		data, err := redis.GetAllData()
-		return RefreshDataCmd{
+		return FetchResponse{
 			Data: data,
 			Err:  err,
 		}

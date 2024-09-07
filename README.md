@@ -1,2 +1,2 @@
 # redis-manager
-a terminal UI for interacting with Redis
+A terminal UI for interacting with Redis
